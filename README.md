@@ -195,3 +195,33 @@ classDiagram
     Vehicle <|-- Truck
 
     ParkingLotDemo ..> ParkingLotSystem
+
+ %% ===== Relationship Lines =====
+    %% Composition (filled diamond) -----------------
+    ParkingLotSystem *-- ParkingFloor : composition
+    ParkingFloor *-- ParkingSpot : composition
+
+    %% Aggregation / Association (solid line) -------
+    ParkingLotSystem --> ParkingTicket : association
+    ParkingSpot --> Vehicle : association
+    ParkingSpot --> VehicleSize : uses
+    ParkingTicket --> ParkingSpot : association
+    ParkingTicket --> Vehicle : association
+    Vehicle --> VehicleSize : uses
+    ParkingLotDemo --> ParkingLotSystem : uses
+
+    %% Dependency (dashed line) ---------------------
+    ParkingLotSystem ..> FeeStrategy : dependency
+    ParkingLotSystem ..> ParkingStrategy : dependency
+
+    %% Interface Realization / Inheritance ----------
+    FeeStrategy <|.. FlatRateFeeStrategy : implements
+    FeeStrategy <|.. VehicleBasedFeeStrategy : implements
+    ParkingStrategy <|.. NearestFirstStrategy : implements
+    ParkingStrategy <|.. FarthestFirstStrategy : implements
+    ParkingStrategy <|.. BestFitStrategy : implements
+
+    %% Class Inheritance ----------------------------
+    Vehicle <|-- Car : extends
+    Vehicle <|-- Bike : extends
+    Vehicle <|-- Truck : extends
