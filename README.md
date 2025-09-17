@@ -75,61 +75,69 @@ A low-level design for a multi-level parking lot system in Java. This system sup
 
 ---
 
+## 🏗️ Architecture Overview
+The system is organized around these key concepts:
+- **ParkingLotSystem** manages floors, tickets, and the chosen strategies.
+- **ParkingFloor** holds multiple **ParkingSpot** instances.
+- **ParkingSpot** can park/unpark a **Vehicle** of a certain **VehicleSize**.
+- **FeeStrategy** and **ParkingStrategy** are interfaces with interchangeable implementations.
+- **Vehicle** is an abstract base with concrete types: **Car**, **Bike**, **Truck**.
+
+---
 
 ## UML Class Diagram
 
 ```mermaid
 classDiagram
+    direction LR
+
     class ParkingLotSystem {
-        -parkingStrategy: ParkingStrategy
-        -floors: List~ParkingFloor~
-        -liveTickets: List~ParkingTicket~
+        -ParkingStrategy parkingStrategy
+        -FeeStrategy feeStrategy
+        -List~ParkingFloor~ floors
+        -Map~String, ParkingTicket~ activeTickets
         +addFloor(ParkingFloor): void
-        +findSpot(Vehicle): Optional~ParkingSpot~
-        +parkVehicle(Vehicle, FeeStrategy): Optional~ParkingSpot~
+        +parkVehicle(Vehicle): Optional~ParkingTicket~
+        +unparkVehicle(String): Optional~double~
         +setFeeStrategy(FeeStrategy): void
-        +unparkVehicle(ParkingSpot): String
+        +setParkingStrategy(ParkingStrategy): void
         +getInstance(): ParkingLotSystem
     }
 
-    class ParkingLotDemo {
-        +main(String[]): void
-    }
-
     class ParkingFloor {
-        -floorNumber: int
-        -spots: Map~VehicleSize, ParkingSpot~
-        +findSpot(Vehicle): Optional~ParkingSpot~
+        -int floorNumber
+        -Map~String, ParkingSpot~ spots
+        +findAvailableSpot(Vehicle): Optional~ParkingSpot~
         +addSpot(ParkingSpot): void
         +displayAvailability(): void
     }
 
-    class ParkingTicket {
-        -spot: ParkingSpot
-        -entryTimestamp: long
-        -vehicle: Vehicle
+    class ParkingSpot {
+        -VehicleSize spotSize
+        -String spotId
+        -boolean isOccupied
+        +boolean canFitVehicle(Vehicle)
+        +void parkVehicle(Vehicle)
+        +void unparkVehicle()
+        +boolean isAvailable()
     }
 
-    class ParkingSpot {
-        -size: VehicleSize
-        -occupied: boolean
-        -vehicle: Vehicle
-        +canFitVehicle(Vehicle): boolean
-        +isAvailable(): boolean
+    class ParkingTicket {
+        -ParkingSpot spot
+        -String ticketId
+        -long entryTimestamp
+        -long exitTimestamp
+        -Vehicle vehicle
     }
 
     class Vehicle {
-        -licenseNumber: String
+        <<abstract>>
+        -VehicleSize size
+        -String licenseNumber
     }
-
-    class Bike {
-    }
-
-    class Car {
-    }
-
-    class Truck {
-    }
+    class Car
+    class Bike
+    class Truck
 
     class VehicleSize {
         <<enumeration>>
@@ -140,51 +148,50 @@ classDiagram
 
     class FeeStrategy {
         <<interface>>
-        +calculateFee(ParkingTicket): double
+        +double calculateFee(ParkingTicket)
     }
-
-    class FlatFeeStrategy {
-        -RATE_PER_HOUR: double
-        +calculateFee(ParkingTicket): double
+    class FlatRateFeeStrategy {
+        +double RATE_PER_HOUR
+        +double calculateFee(ParkingTicket)
     }
-
     class VehicleBasedFeeStrategy {
-        -HOURLY_RATES: Map~VehicleSize, Double~
-        +calculateFee(ParkingTicket): double
+        +Map~VehicleSize, Double~ HOURLY_RATES
+        +double calculateFee(ParkingTicket)
     }
 
     class ParkingStrategy {
         <<interface>>
-        +findSpotList(ParkingFloor, Vehicle): Optional~ParkingSpot~
+        +Optional~ParkingSpot~ findSpot(List~ParkingFloor~, Vehicle)
+    }
+    class NearestFirstStrategy
+    class FarthestFirstStrategy
+    class BestFitStrategy
+
+    class ParkingLotDemo {
+        +main(String[])
     }
 
-    class NearestFirstStrategy {
-    }
-
-    class BestFitStrategy {
-    }
-
-    class FartherFirstStrategy {
-    }
-
-    ParkingLotDemo --> ParkingLotSystem
-    ParkingLotSystem --> ParkingStrategy
-    ParkingLotSystem --> ParkingFloor
+    %% Relationships
+    ParkingLotSystem *-- ParkingFloor
     ParkingLotSystem --> ParkingTicket
     ParkingLotSystem ..> FeeStrategy
-    ParkingFloor --> ParkingSpot
+    ParkingLotSystem ..> ParkingStrategy
+
+    ParkingFloor *-- ParkingSpot
     ParkingSpot --> Vehicle
     ParkingSpot --> VehicleSize
     ParkingTicket --> ParkingSpot
     ParkingTicket --> Vehicle
-    ParkingTicket --> ParkingStrategy
-    FeeStrategy <|-- FlatFeeStrategy
-    FeeStrategy <|-- VehicleBasedFeeStrategy
-    ParkingStrategy <|-- NearestFirstStrategy
-    ParkingStrategy <|-- BestFitStrategy
-    ParkingStrategy <|-- FartherFirstStrategy
-    Vehicle <|-- Bike
-    Vehicle <|-- Car
-    Vehicle <|-- Truck
     Vehicle --> VehicleSize
 
+    FeeStrategy <|.. FlatRateFeeStrategy
+    FeeStrategy <|.. VehicleBasedFeeStrategy
+    ParkingStrategy <|.. NearestFirstStrategy
+    ParkingStrategy <|.. FarthestFirstStrategy
+    ParkingStrategy <|.. BestFitStrategy
+
+    Vehicle <|-- Car
+    Vehicle <|-- Bike
+    Vehicle <|-- Truck
+
+    ParkingLotDemo ..> ParkingLotSystem
